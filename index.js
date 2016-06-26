@@ -71,9 +71,9 @@ app.intent('GetUserId',
   {
     "slots":{"userid":"LITERAL"}
 	,"utterances":[ 
-		"my user id is {userid}",
-		"user id is {userid}",
-		"my user name is {userid}"]
+		"my user id is {sajin|userid}",
+		"user id is {sajin|userid}",
+		"my user name is {sajin|userid}"]
   },
   function(request,response) {
     userid = request.slot('userid');
