@@ -1,0 +1,36 @@
+{
+<<<<<<< HEAD
+  "name": "synebroker",
+  "version": "1.0.0",
+  "description": "Trading amazon echo app",
+=======
+  "name": "synebrokerskill",
+  "version": "1.0.0",
+  "description": "Voice based retail trading",
+>>>>>>> 808cd6154ce69b081c9e57edb724bfe5a37e13e0
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sajinb/SyneBroker.git"
+  },
+  "keywords": [
+<<<<<<< HEAD
+    "synebroker"
+=======
+    "synebrokerskill"
+>>>>>>> 808cd6154ce69b081c9e57edb724bfe5a37e13e0
+  ],
+  "author": "Sajin",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/sajinb/SyneBroker/issues"
+  },
+  "homepage": "https://github.com/sajinb/SyneBroker#readme",
+  "dependencies": {
+    "alexa-app": "^2.3.4",
+    "lodash": "^4.13.1"
+  }
+}
