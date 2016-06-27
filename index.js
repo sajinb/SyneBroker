@@ -4,13 +4,14 @@ module.change_code = 1;
 var alexa = require( 'alexa-app' );
 var _ = require('lodash');
 var app = new alexa.app( 'SyneBroker' );
-var http = require( 'http' );
+var http = require( 'https' );
+var twilio = require('twilio');
 
 
 var stocks = [ 'AAPL', 'GOOG', 'AMZN' ];
 
 var url = function(stockIds){
-  var yahoourl = 'http://query.yahooapis.com/v1/public/yql';
+  var yahoourl = 'https://query.yahooapis.com/v1/public/yql';
     yahoourl += '?q=select * from yahoo.finance.quotes where symbol in (';
     yahoourl += '"' + stockIds + '"'; 
     yahoourl += ')&env=store://datatables.org/alltableswithkeys&format=json';
@@ -51,12 +52,11 @@ var getJsonFromYahoo = function(stock, callback){
         
     } );
 };
-var speechText;
-	
+
 
 app.launch( function( request, response ) {
 	response.say( 'Welcome to SyneStock' ).reprompt( 'Please provide your user id.' ).shouldEndSession( false );
-	getJsonFromYahoo(stocks, function(data){speechText=data;console.log(speechText)});
+	
 });
 
 app.error = function( exception, request, response ) {
@@ -67,6 +67,7 @@ app.error = function( exception, request, response ) {
 };
 var userid;
 var OTP=99999;
+//var speechText;
 app.intent('GetUserId',
   {
     "slots":{"userid":"LITERAL"}
@@ -77,6 +78,7 @@ app.intent('GetUserId',
   },
   function(request,response) {
     userid = request.slot('userid');
+	response.session("loginuser",request.slot('userid'));
     response.say(userid+" is correct.Please provide your password.");
   }
 );
@@ -98,12 +100,15 @@ app.intent('GetPassword',
       return true;
     } else {
 		OTP = Math.floor(Math.random() * 90000) + 10000;
-		response.say("Login successful for "+userid).reprompt('An OTP has been sent to your registered mobile number.' ).shouldEndSession( false );
-		response.card({
+		response.session("otp", ""+OTP);
+		sendTextMessage(OTP);
+		OTP="";
+		response.say("Login successful for "+request.session("loginuser")).reprompt('An OTP has been sent to your registered mobile number.' ).shouldEndSession( false );
+		/*response.card({
 		  type:    "Simple",
 		  title:   "OTP",  //this is not required for type Simple 
 		  content: ""+OTP
-		});
+		});*/
 
 		userid="";
 	}
@@ -115,12 +120,39 @@ app.intent('GetMyPortfolioDetails',
 	,"utterances":[ 
 		"Show my portfolio",
 		"Show my portfolio details",
+		"Get my portfolio details",
 		"My portfolio details"]
   },
   function(request,response) {
     //userid = request.slot('userid');
+	getJsonFromYahoo(stocks, function(data){
+		var speechText=data;
+		console.log(speechText);
+		response.say(speechText);
+		response.send();});
+	return false;
+		
+  }
+);
+app.intent('OTPIntent',
+  {
+    "slots":{"otpnum":"NUMBER"}
+	,"utterances":[ 
+		"my one time password is {three zero four two one|otpnum}",
+		"my otp is {four eight five six two|otpnum}",
+		"one time password is {two one nine seven eight|otpnum}"]
+  },
+  function(request,response) {
+    //userid = request.slot('userid');
+	var spokenotp = request.slot('otpnum');
+	if(spokenotp != request.session("otp")){
+		response.say("Wrong one time password").reprompt( 'Please provide correct one time passsowrd.' ).shouldEndSession( false );
+	}else{
+		//getJsonFromYahoo(stocks, function(data){speechText=data;console.log(speechText);});
+		response.say("Authentication Successful!");
+	}
 	
-    response.say(speechText);
+		
   }
 );
 
@@ -133,6 +165,45 @@ app.intent('sell', function(request,response) {
 });
 
 
+function sendTextMessage(OTP){
+// Create a new REST API client to make authenticated requests against the
+// twilio back end
 
+var client = new twilio.RestClient('AC262f2fba2b86a6845fd22bc763a60978', '8c6242330d9fbdc5eea17dc8475603ed');
+
+// Pass in parameters to the REST API using an object literal notation. The
+// REST client will handle authentication and response serialzation for you.
+
+client.sms.messages.create({
+
+    to:'+918380076641',
+
+    from:'+12019497710',
+
+    body:'OTP - '+OTP
+
+}, function(error, message) {
+
+    // The HTTP request to Twilio will run asynchronously. This callback
+    // function will be called when a response is received from Twilio
+    // The "error" variable will contain error information, if any.
+    // If the request was successful, this value will be "falsy"
+
+    if (!error) {
+		// The second argument to the callback will contain the information
+		// sent back by Twilio for the request. In this case, it is the
+        // information about the text messsage you just sent:
+
+        console.log('Success! The SID for this SMS message is:');
+        console.log(message.sid);
+        console.log('Message sent on:');
+        console.log(message.dateCreated);
+
+    } else {
+        console.log('Oops! There was an error.');
+    }
+
+});
+}
 
 module.exports = app;

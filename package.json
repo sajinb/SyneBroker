@@ -1,7 +1,4 @@
 {
-  "name": "synebroker",
-  "version": "1.0.0",
-  "description": "Trading amazon echo app",
   "name": "synebrokerskill",
   "version": "1.0.0",
   "description": "Voice based retail trading",
@@ -24,6 +21,7 @@
   "homepage": "https://github.com/sajinb/SyneBroker#readme",
   "dependencies": {
     "alexa-app": "^2.3.4",
-    "lodash": "^4.13.1"
+    "lodash": "^4.13.1",
+    "twilio": "^2.9.1"
   }
 }
