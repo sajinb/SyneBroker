@@ -55,8 +55,8 @@ var getJsonFromYahoo = function(stock, callback){
 
 
 app.launch( function( request, response ) {
-	response.say( 'Welcome to SyneStock' ).reprompt( 'Please provide your user id.' ).shouldEndSession( false );
-	
+	response.say( 'Welcome to SyneBroker.Please provide your user id.' ).reprompt('I didn\'t hear you. Please provide your user id.').shouldEndSession(false);
+	response.clearSession();
 });
 
 app.error = function( exception, request, response ) {
@@ -65,9 +65,9 @@ app.error = function( exception, request, response ) {
 	console.log(response);	
 	response.say( 'Sorry an error occured ' + error.message);
 };
-var userid;
+
 var OTP=99999;
-//var speechText;
+
 app.intent('GetUserId',
   {
     "slots":{"userid":"LITERAL"}
@@ -77,18 +77,20 @@ app.intent('GetUserId',
 		"my user name is {sajin|userid}"]
   },
   function(request,response) {
-    userid = request.slot('userid');
-	response.session("loginuser",request.slot('userid'));
+    var userid = request.slot('userid');
+	response.session('loginuser',request.slot('userid'));
     response.say(userid+" is correct.Please provide your password.");
+	response.shouldEndSession( false );
   }
 );
-//response.session(String attributeName, String attributeValue)
-//response.shouldEndSession(boolean end [, String reprompt] )
+
 app.intent('GetPassword',
   {
     "slots":{"password":"LITERAL"}
 	,"utterances":[ 
-		"My password is {password}",
+		"{test|password}",
+		"{hello|password}",
+		"my password is {password}",
 		"password is {password}",
 		"my pass phrase is {password}"]
   },
@@ -103,14 +105,14 @@ app.intent('GetPassword',
 		response.session("otp", ""+OTP);
 		sendTextMessage(OTP);
 		OTP="";
-		response.say("Login successful for "+request.session("loginuser")).reprompt('An OTP has been sent to your registered mobile number.' ).shouldEndSession( false );
+		response.say("Login successful for "+request.session('loginuser')+".An OTP has been sent to your registered mobile number for final verification." );
 		/*response.card({
 		  type:    "Simple",
 		  title:   "OTP",  //this is not required for type Simple 
 		  content: ""+OTP
 		});*/
 
-		userid="";
+		response.shouldEndSession( false );
 	}
   }
 );
@@ -124,13 +126,22 @@ app.intent('GetMyPortfolioDetails',
 		"My portfolio details"]
   },
   function(request,response) {
-    //userid = request.slot('userid');
+    
+	if(_.isEmpty(request.session('loginuser'))){
+		response.say("Please provide your user id.");
+		response.shouldEndSession( false );
+	}else if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false'){
+		response.say("You are not authorized.");
+		response.shouldEndSession( false );
+	}else{
 	getJsonFromYahoo(stocks, function(data){
 		var speechText=data;
 		console.log(speechText);
 		response.say(speechText);
 		response.send();});
+		response.shouldEndSession( false );
 	return false;
+	}
 		
   }
 );
@@ -140,18 +151,21 @@ app.intent('OTPIntent',
 	,"utterances":[ 
 		"my one time password is {three zero four two one|otpnum}",
 		"my otp is {four eight five six two|otpnum}",
+		"otp is {two one nine seven eight|otpnum}",
 		"one time password is {two one nine seven eight|otpnum}"]
   },
   function(request,response) {
     //userid = request.slot('userid');
 	var spokenotp = request.slot('otpnum');
 	if(spokenotp != request.session("otp")){
-		response.say("Wrong one time password").reprompt( 'Please provide correct one time passsowrd.' ).shouldEndSession( false );
+		response.say('Wrong one time password.Please provide correct one time passsowrd.' );
+		response.session('authflag','false');
+		
 	}else{
-		//getJsonFromYahoo(stocks, function(data){speechText=data;console.log(speechText);});
 		response.say("Authentication Successful!");
+		response.session('authflag','true');
 	}
-	
+	response.shouldEndSession( false )
 		
   }
 );
