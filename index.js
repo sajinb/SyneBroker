@@ -8,6 +8,26 @@ var http = require( 'https' );
 var twilio = require('twilio');
 
 
+var appSocket = http.createServer(function(req, res) {
+        console.log('createServer');
+});
+appSocket.listen(8321);
+
+var io = require('socket.io').listen(appSocket);
+
+
+io.on('connection', function(socket) {
+console.log('socket connection established');
+   io.emit('Server 2 Client Message', 'Welcome 3!' );
+
+    /*socket.on('Client 2 Server Message', function(message)      {
+        console.log(message);
+        io.emit('Server 2 Client Message', message.toUpperCase() );     //upcase it
+    });*/
+
+});
+
+
 var stocks = [ 'AAPL', 'GOOG', 'AMZN' ];
 
 var url = function(stockIds){
