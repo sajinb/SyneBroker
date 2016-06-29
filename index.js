@@ -14,6 +14,14 @@ var appSocket = http.createServer(function(req, res) {
 appSocket.listen(8321);
 
 var io = require('socket.io').listen(appSocket);
+io.set("origins = *");
+io.set('transports', [
+    'websocket'
+    , 'flashsocket'
+    , 'htmlfile'
+    , 'xhr-polling'
+    , 'jsonp-polling'
+]);
 
 
 io.on('connection', function(socket) {
