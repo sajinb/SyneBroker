@@ -8,32 +8,16 @@ var http = require( 'https' );
 var twilio = require('twilio');
 
 
-var appSocket = http.createServer(function(req, res) {
-        console.log('createServer');
+var pubnub = require('pubnub');
+
+var p = pubnub.init({
+    subscribe_key : "sub-c-b1cf034e-3e48-11e6-ba28-02ee2ddab7fe",
+    publish_key : "pub-c-6333b617-6b69-44f0-8d79-d13a49f0c100",
+    ssl: false
 });
-appSocket.listen(8321);
-
-var io = require('socket.io').listen(appSocket);
-io.set("origins = *");
-io.set('transports', [
-    'websocket'
-    , 'flashsocket'
-    , 'htmlfile'
-    , 'xhr-polling'
-    , 'jsonp-polling'
-]);
 
 
-io.on('connection', function(socket) {
-console.log('socket connection established');
-   io.emit('Server 2 Client Message', 'Welcome 3!' );
 
-    /*socket.on('Client 2 Server Message', function(message)      {
-        console.log(message);
-        io.emit('Server 2 Client Message', message.toUpperCase() );     //upcase it
-    });*/
-
-});
 
 
 var stocks = [ 'AAPL', 'GOOG', 'AMZN' ];
@@ -83,7 +67,12 @@ var getJsonFromYahoo = function(stock, callback){
 
 
 app.launch( function( request, response ) {
-	response.say( 'Welcome to SyneBroker.Please provide your user id.' ).reprompt('I didn\'t hear you. Please provide your user id.').shouldEndSession(false);
+	p.publish({
+    "message" : "Welcome",
+    "channel" : "welcome_channel",
+	});
+	response.say( 'Welcome to SeneBroker.Please provide your user id.' ).reprompt('I didn\'t hear you. Please provide your user id.').shouldEndSession(false);
+
 	response.clearSession();
 });
 
@@ -108,6 +97,10 @@ app.intent('GetUserId',
     var userid = request.slot('userid');
 	response.session('loginuser',request.slot('userid'));
     response.say(userid+" is correct.Please provide your password.");
+	p.publish({
+    "message" : userid,
+    "channel" : "userid_channel",
+	});
 	response.shouldEndSession( false );
   }
 );
@@ -125,7 +118,7 @@ app.intent('GetPassword',
   function(request,response) {
     var password = request.slot('password');
 	if (_.isEmpty(password)) {
-      var prompt = 'I didn\'t hear you. Please provide a passowrd.';
+      var prompt = 'I didn\'t hear you. Please provide a password.';
       response.say(prompt).reprompt(reprompt).shouldEndSession(false);
       return true;
     } else {
@@ -218,7 +211,7 @@ var client = new twilio.RestClient('AC262f2fba2b86a6845fd22bc763a60978', '8c6242
 
 client.sms.messages.create({
 
-    to:'+918380076641',
+    to:'+919156673863',
 
     from:'+12019497710',
 
