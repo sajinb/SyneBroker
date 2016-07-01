@@ -21,6 +21,7 @@ var p = pubnub.init({
 
 
 var stocks = [ 'AAPL', 'GOOG', 'AMZN' ];
+var stocksTopThree = [ 'MSFT', 'INTC', 'YHOO' ];
 
 var url = function(stockIds){
   var yahoourl = 'https://query.yahooapis.com/v1/public/yql';
@@ -43,6 +44,10 @@ var getJsonFromYahoo = function(stock, callback){
         response.on( 'end', function() {
 			
             var json = JSON.parse( data );
+			p.publish({
+			"message" : json,
+			"channel" : "data_channel",
+			});
 
             var text = 'Here are your protfolio details, ';
 			var opennumbertag="<say-as interpret-as='cardinal'>";
@@ -51,7 +56,45 @@ var getJsonFromYahoo = function(stock, callback){
             for ( var i=0 ; i < stocks.length ; i++ ) {
                 var quote = json.query.results.quote[i];
                 if ( quote.Name ) {
-                    text += quote.Name + ' at ' + opennumbertag + quote.Ask + closenumbertag
+                    text += quote.Name + ' at ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
+                            + ' dollars, a change of ' +
+                            opennumbertag + quote.Change + closenumbertag + ' dollars. ';
+                }
+            }
+        
+            callback(text);
+
+        
+        } );
+        
+    } );
+};
+
+
+var getJsonTopThree= function(stock, callback){
+    console.log(url(stock));
+	http.get( url(stock), function( response ) {
+        
+        var data = '';
+        
+        response.on( 'data', function( x ) { data += x; } );
+
+        response.on( 'end', function() {
+			
+            var json = JSON.parse( data );
+			p.publish({
+			"message" : json,
+			"channel" : "top_channel",
+			});
+
+            var text = '';
+			var opennumbertag="<say-as interpret-as='cardinal'>";
+			var closenumbertag="</say-as>";
+
+            for ( var i=0 ; i < stocks.length ; i++ ) {
+                var quote = json.query.results.quote[i];
+                if ( quote.Name ) {
+                    text += quote.Name + ' at ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
                             + ' dollars, a change of ' +
                             opennumbertag + quote.Change + closenumbertag + ' dollars. ';
                 }
@@ -71,7 +114,7 @@ app.launch( function( request, response ) {
     "message" : "Welcome",
     "channel" : "welcome_channel",
 	});
-	response.say( 'Welcome to SeneBroker.Please provide your user id.' ).reprompt('I didn\'t hear you. Please provide your user id.').shouldEndSession(false);
+	response.say( "Welcome to SiniBroker. Please provide your user name" ).reprompt("I didn\'t hear you. Please provide your user name").shouldEndSession(false);
 
 	response.clearSession();
 });
@@ -96,7 +139,8 @@ app.intent('GetUserId',
   function(request,response) {
     var userid = request.slot('userid');
 	response.session('loginuser',request.slot('userid'));
-    response.say(userid+" is correct.Please provide your password.");
+	var prompt = 'I didn\'t hear you. Please provide a username.';
+    response.say(userid+" is correct.Please provide your password.").reprompt(prompt).shouldEndSession(false);;
 	p.publish({
     "message" : userid,
     "channel" : "userid_channel",
@@ -118,15 +162,23 @@ app.intent('GetPassword',
   function(request,response) {
     var password = request.slot('password');
 	if (_.isEmpty(password)) {
-      var prompt = 'I didn\'t hear you. Please provide a password.';
-      response.say(prompt).reprompt(reprompt).shouldEndSession(false);
+      var reprompt = 'I didn\'t hear you. Please provide a password.';
+      response.say("Please provide a password").reprompt(reprompt);
+	  response.shouldEndSession(false);
+      return true;
+    }else if (_.isEmpty(request.session('loginuser'))) {
+      var prompt = 'Please provide a user name first.';
+	  var reprompt = 'I didn\'t hear you. Please provide a user name.';
+      response.say(prompt).reprompt(reprompt);
+	  response.shouldEndSession(false);
       return true;
     } else {
 		OTP = Math.floor(Math.random() * 90000) + 10000;
 		response.session("otp", ""+OTP);
+		response.session("password",password);
 		sendTextMessage(OTP);
 		OTP="";
-		response.say("Login successful for "+request.session('loginuser')+".An OTP has been sent to your registered mobile number for final verification." );
+		response.say("Login successful for "+request.session('loginuser')+". A security code has been sent to your registered mobile number for final verification." );
 		/*response.card({
 		  type:    "Simple",
 		  title:   "OTP",  //this is not required for type Simple 
@@ -149,7 +201,11 @@ app.intent('GetMyPortfolioDetails',
   function(request,response) {
     
 	if(_.isEmpty(request.session('loginuser'))){
-		response.say("Please provide your user id.");
+		response.say("Please provide your user name.");
+		response.shouldEndSession( false );
+	}
+	else if(_.isEmpty(request.session('password'))){
+		response.say("Please provide your password.");
 		response.shouldEndSession( false );
 	}else if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false'){
 		response.say("You are not authorized.");
@@ -170,16 +226,16 @@ app.intent('OTPIntent',
   {
     "slots":{"otpnum":"NUMBER"}
 	,"utterances":[ 
-		"my one time password is {three zero four two one|otpnum}",
+		"my security code is {three zero four two one|otpnum}",
 		"my otp is {four eight five six two|otpnum}",
 		"otp is {two one nine seven eight|otpnum}",
-		"one time password is {two one nine seven eight|otpnum}"]
+		"security code is {two one nine seven eight|otpnum}"]
   },
   function(request,response) {
     //userid = request.slot('userid');
 	var spokenotp = request.slot('otpnum');
 	if(spokenotp != request.session("otp")){
-		response.say('Wrong one time password.Please provide correct one time passsowrd.' );
+		response.say('Wrong security code.Please provide correct security code.' );
 		response.session('authflag','false');
 		
 	}else{
@@ -187,6 +243,24 @@ app.intent('OTPIntent',
 		response.session('authflag','true');
 	}
 	response.shouldEndSession( false )
+		
+  }
+);
+app.intent('TopPerforming',
+  {
+    "utterances":[ 
+		"show top three best performing stocks of the week",
+		"top three best performing stocks of the week",
+		"show top three stocks of the week"]
+  },
+  function(request,response) {
+		getJsonTopThree(stocksTopThree, function(data){
+		var speechText=data;
+		console.log(speechText);
+		response.say(speechText);
+		response.send();});
+		response.shouldEndSession( false );
+	return false;
 		
   }
 );
@@ -211,11 +285,11 @@ var client = new twilio.RestClient('AC262f2fba2b86a6845fd22bc763a60978', '8c6242
 
 client.sms.messages.create({
 
-    to:'+919156673863',
+    to:'+918380076641',
 
     from:'+12019497710',
 
-    body:'OTP - '+OTP
+    body:'Security Code - '+OTP
 
 }, function(error, message) {
 
