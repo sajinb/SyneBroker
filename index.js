@@ -265,8 +265,29 @@ app.intent('TopPerforming',
   }
 );
 
-app.intent('buy', function(request,response) {
-	response.say("You bought a item");
+app.intent('BuyOPtion',
+  {
+    "utterances":[ 
+		"I want to buy ten shares of Microsoft",
+		"buy ten shares of Microsoft",
+		"buy shares"]
+  },
+  function(request,response) {
+		
+		response.say("It will cost six hundred dollars. Are you sure want to buy this stock?");
+		response.shouldEndSession( false );
+		
+  }
+);
+
+app.intent('buy', {
+    "utterances":[ 
+		"Yes go ahead",
+		"Please go ahead",
+		"Please buy",
+		"ok go ahead",]
+  },function(request,response) {
+	response.say("Initiating transaction. Transaction successful. You just bought 10 shares of Microsoft");
 });
 
 app.intent('sell', function(request,response) {
