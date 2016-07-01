@@ -94,8 +94,7 @@ var getJsonTopThree= function(stock, callback){
                 var quote = json.query.results.quote[i];
                 if ( quote.Name ) {
                     text += quote.Name + ' at ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
-                            + ' dollars, a change of ' +
-                            opennumbertag + quote.Change + closenumbertag + ' dollars. ';
+                            + ' dollars. ';
                 }
             }
         
