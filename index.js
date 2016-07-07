@@ -17,11 +17,10 @@ var p = pubnub.init({
 });
 
 
-
-
-
 var stocks = [ 'AAPL', 'GOOG', 'AMZN' ];
-var stocksTopThree = [ 'MSFT', 'INTC', 'YHOO' ];
+var stocksTopThree = [ 'MSFT', 'INTC', 'YHOO' ]; 
+var holdingCount = [100,200,65];
+var prize = [];
 
 var url = function(stockIds){
   var yahoourl = 'https://query.yahooapis.com/v1/public/yql';
@@ -31,7 +30,54 @@ var url = function(stockIds){
 	
 	return yahoourl;
 };    
- 
+
+var marketIndex = ['INDEXDJX:.DJI','INDEXSP:.INX','INDEXNASDAQ:.IXIC'];
+var gglUrl = function(indexId){
+  var googleurl = 'https://finance.google.com/finance/info?client=ig&q='+indexId;
+	return googleurl;
+}; 
+
+var getMarketSummury = function(index, callback){
+     console.log(gglUrl(index));
+	http.get( gglUrl(index), function( response ) {        
+        var data = '';        
+        response.on( 'data', function( x ) { data += x; } );
+        response.on( 'end', function() {
+            var jsonStr = data.substring(3,data.length);
+            console.log('data--'+jsonStr);			
+            var json = JSON.parse(jsonStr);
+			p.publish({
+			"message" : json,
+			"channel" : "data_channel",
+			});
+			var text = ', ';
+			var opennumbertag="<say-as interpret-as='cardinal'>";
+			var closenumbertag="</say-as>";
+            for ( var i=0; i < json.length; i++ ) {
+			   var jsonData = json[i];
+               var CompName = jsonData.e;
+			   var Price = jsonData.l_cur;
+			   var ChnageInPrice = jsonData.c;
+			   var PercentChnageInPrice = jsonData.cp;
+			   var TodayDate = jsonData.lt;
+			   var GoogleIndex ='{"INDEXDJX":"Dow Jones Industrial Average","INDEXSP":"S&P 500","INDEXNASDAQ":"NASDAQ Composite"}';
+			   var marketJson = JSON.parse(GoogleIndex);
+			 if(parseFloat(ChnageInPrice) > 0)
+				{ 
+                      text += marketJson[CompName] + ' is increse by' + opennumbertag + ChnageInPrice + closenumbertag
+                            + 'points,or'+ opennumbertag + PercentChnageInPrice + closenumbertag + 'per cent, at' +Price +' dollars. ';
+			    }
+			if(parseFloat(ChnageInPrice) < 0)
+				{ 
+                      text += marketJson[CompName] + 'is lower by' + opennumbertag + ChnageInPrice + closenumbertag
+                            + 'points,or'+ opennumbertag + PercentChnageInPrice + closenumbertag + 'per cent, at' +Price+' dollars. ';
+			    }
+            }        
+            callback(text);        
+        } );
+        
+    } );
+}; 
    
 var getJsonFromYahoo = function(stock, callback){
     console.log(url(stock));
@@ -49,18 +95,20 @@ var getJsonFromYahoo = function(stock, callback){
 			"channel" : "data_channel",
 			});
 
-            var text = 'Here are your protfolio details, ';
+            var text = 'Here are your protfolio details,';
 			var opennumbertag="<say-as interpret-as='cardinal'>";
 			var closenumbertag="</say-as>";
+			var totalAsset=0;
 
             for ( var i=0 ; i < stocks.length ; i++ ) {
                 var quote = json.query.results.quote[i];
                 if ( quote.Name ) {
-                    text += quote.Name + ' at ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
+                    text +=  'you are holding ' +holdingCount[i]+' share of '+  quote.Name + ' who current prize is ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
                             + ' dollars ';
+					totalAsset+= parseFloat(quote.LastTradePriceOnly);
                 }
             }
-        
+             text+=" your total asset is "+totalAsset;
             callback(text);
 
         
@@ -107,13 +155,58 @@ var getJsonTopThree= function(stock, callback){
 };
 
 
+var getCompanyName= function(stock, callback){
+    console.log(url(stock));
+	http.get( url(stock), function( response ) {
+        
+        var data = '';
+        
+        response.on( 'data', function( x ) { data += x; } );
+
+        response.on( 'end', function() {
+			
+            var json = JSON.parse( data );
+			p.publish({
+			"message" : json,
+			"channel" : "top_channel",
+			});
+
+            var text = '';
+			var opennumbertag="<say-as interpret-as='cardinal'>";
+			var closenumbertag="</say-as>";
+			var quote = json.query.results.quote;
+			if(parseFloat(quote.Change) > 0)
+				{ 
+                       text += quote.Name + ' Up by '+ opennumbertag + quote.Change + closenumbertag +
+					                     'points,or'+ opennumbertag + quote.PercentChange + closenumbertag + 
+										 'per cent, at'+ opennumbertag + quote.LastTradePriceOnly + closenumbertag +
+                                         ' dollars. ';
+                }
+				if(parseFloat(quote.Change) < 0)
+				{ 
+                        text += quote.Name + ' Down by '+ opennumbertag + quote.Change + closenumbertag +
+					                     'points,or'+ opennumbertag + quote.PercentChange + closenumbertag + 
+										 'per cent, at'+ opennumbertag + quote.LastTradePriceOnly + closenumbertag +
+                                         ' dollars. ';
+                }
+          
+            prize.push(quote.LastTradePriceOnly);
+            callback(text);
+
+        
+        } );
+        
+    } );
+};
+
+
+
 app.launch( function( request, response ) {
 	p.publish({
     "message" : "Welcome",
     "channel" : "welcome_channel",
 	});
-	response.say( "Welcome to SiniBroker. Please provide your user name" ).reprompt("I didn\'t hear you. Please provide your user name").shouldEndSession(false);
-
+	response.say( "Welcome to SiniBroker. May I know, What would you like? Quote My Portfolio,Market Summary,Top Most Trader" ).reprompt("I did not understand what you want to know.").shouldEndSession(false);
 	response.clearSession();
 });
 
@@ -124,8 +217,31 @@ app.error = function( exception, request, response ) {
 	response.say( 'Sorry an error occured ' + error.message);
 };
 
-var OTP=99999;
+app.intent('GetMarketSummery',
+  {
+    //"slots":{"userid":"LITERAL"},
+	"utterances":[ 
+		"Show market Summuery for today",
+		"Current market update",
+		"Show market index for today"]
+  },
+   function(request,response) {
+				getMarketSummury(marketIndex,function(data){
+				var speechText=data;
+				console.log(speechText);
+				response.say(speechText);
+				response.send();});
+				response.shouldEndSession( false );
+				return false;				
+      }
+);
 
+
+
+var OTP=99999;
+var securityMsg = "A security code has been sent to your registered mobile number for final verification.";
+
+/*
 app.intent('GetUserId',
   {
     "slots":{"userid":"LITERAL"}
@@ -145,8 +261,9 @@ app.intent('GetUserId',
 	});
 	response.shouldEndSession( false );
   }
-);
+); */
 
+/*
 app.intent('GetPassword',
   {
     "slots":{"password":"LITERAL"}
@@ -174,52 +291,104 @@ app.intent('GetPassword',
 		OTP = Math.floor(Math.random() * 90000) + 10000;
 		response.session("otp", ""+OTP);
 		response.session("password",password);
-		sendTextMessage(OTP);
+		//sendTextMessage(OTP);
 		OTP="";
 		response.say("Login successful for "+request.session('loginuser')+". A security code has been sent to your registered mobile number for final verification." );
 		/*response.card({
 		  type:    "Simple",
 		  title:   "OTP",  //this is not required for type Simple 
 		  content: ""+OTP
-		});*/
+		}); **
 
 		response.shouldEndSession( false );
 	}
   }
-);
+); */
+
+  var portfolioLogic = function(request,response) {
+	            if(request.session("portSym")!= null 
+				&& request.session("quantity")!= null)
+						{
+							stocks.push(request.session("portSym"));
+							holdingCount.push(request.session("quantity"));
+						}
+			            getJsonFromYahoo(stocks, function(data){
+						var speechText=data;
+						console.log(speechText);
+						response.say(speechText);
+				     	response.send();});
+						response.shouldEndSession( false );
+						return false;
+	                      };
+
 app.intent('GetMyPortfolioDetails',
-  {
-    "slots":{"userid":"LITERAL"}
-	,"utterances":[ 
+  {"utterances":[ 
 		"Show my portfolio",
 		"Show my portfolio details",
 		"Get my portfolio details",
 		"My portfolio details"]
   },
   function(request,response) {
-    
-	if(_.isEmpty(request.session('loginuser'))){
-		response.say("Please provide your user name.");
-		response.shouldEndSession( false );
-	}
-	else if(_.isEmpty(request.session('password'))){
-		response.say("Please provide your password.");
-		response.shouldEndSession( false );
-	}else if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false'){
-		response.say("You are not authorized.");
-		response.shouldEndSession( false );
-	}else{
-	getJsonFromYahoo(stocks, function(data){
-		var speechText=data;
-		console.log(speechText);
-		response.say(speechText);
-		response.send();});
-		response.shouldEndSession( false );
-	return false;
-	}
-		
+	  if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false'){
+		    console.log(OTP);
+		     var otpValue = sendOTP(OTP);
+			 response.session("otp", ""+otpValue);
+		     response.say(securityMsg);
+			 response.session("lastQuestion","portfolio")
+			 response.shouldEndSession( false );
+		   
+	     } 
+        else{
+			  if(request.session("portSym")!= null 
+				&& request.session("quantity")!= null)
+						{
+							stocks.push(request.session("portSym"));
+							holdingCount.push(request.session("quantity"));
+						}
+						console.log(stocks.length+"---"+holdingCount.length);
+			            getJsonFromYahoo(stocks, function(data){
+						var speechText=data;
+						console.log(speechText);
+						response.say(speechText);
+				     	response.send();});
+						response.shouldEndSession( false );
+						return false;
+		}		 
   }
 );
+
+app.intent('GetCompanyDetails',{
+       "slots":{"companyName":"LITERAL"}
+	   ,"utterances":[ 
+		"Company Detail{Apple Inc|companyName}",
+		"Show Company Detail{Apple Inc|companyName}",
+		" Get Company Detail for {Apple Inc|companyName}",
+		"Company Name is{Apple Inc|companyName}"]
+		}, function(request,response) {
+				var compName = request.slot('companyName');
+				console.log(compName);
+				var campanyName = '{"International Business Machines":"IBM","IBM":"IBM","Apple Inc":"AAPL","Alphabet Inc": "GOOG","Amazon.com":"AMZN"}';
+				var compJson = JSON.parse(campanyName);
+				//console.log("Company"+compJson[compName]);
+				var symbol = compJson[compName];
+				 /* if(compJson[compName] == compName)
+				  {
+				     symbol = compJson[compName];
+				  }*/
+				getCompanyName(symbol, function(data){
+				var speechText=data;
+				console.log(speechText);
+				response.say(speechText);
+				response.say("Do you want to buy?");
+				response.session("symbol",symbol);
+				response.clearSession(prize);
+				response.session("prize",prize);
+				response.send();});
+				response.shouldEndSession( false );
+				return false;				
+      } );
+
+
 app.intent('OTPIntent',
   {
     "slots":{"otpnum":"NUMBER"}
@@ -238,6 +407,29 @@ app.intent('OTPIntent',
 		
 	}else{
 		response.say("Authentication Successful!");
+		 if(request.session("lastQuestion")=="portfolio")
+		 {
+			  if(request.session("portSym")!= null && request.session("quantity")!= null)
+						{
+							stocks.push(request.session("portSym"));
+							holdingCount.push(request.session("quantity"));
+						}
+			 getJsonFromYahoo(stocks, function(data){
+						var speechText=data;
+						console.log(speechText);
+						response.say(speechText);
+						response.send();});
+						response.shouldEndSession( false );
+						return false;
+		   }
+		   if(request.session("buyOption")=="buyOption")
+		   {
+				var pzValue = request.session("prize");
+				var quantityCount = request.session("buyCount");
+				var cost = request.session("buyCount")* pzValue;	    
+				response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure, you want continue with this stock?");
+				response.shouldEndSession( false );	
+		  }
 		response.session('authflag','true');
 	}
 	response.shouldEndSession( false )
@@ -265,18 +457,46 @@ app.intent('TopPerforming',
 
 app.intent('BuyOPtion',
   {
+    "slots":{"buyCount":"NUMBER"},
     "utterances":[ 
 		"I want to buy ten shares of Microsoft",
+		"yes,I want to buy {buyCount|otpnum} shares",
 		"buy ten shares of Microsoft",
 		"buy shares"]
   },
   function(request,response) {
-		
-		response.say("It will cost six hundred dollars. Are you sure want to buy this stock?");
-		response.shouldEndSession( false );
-		
+	 if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false')
+	   {
+	    var otpValue = sendOTP(OTP);
+		response.say(securityMsg);
+		response.session("buyCount",request.slot("buyCount"));
+		response.session("otp", ""+otpValue);
+		response.session("buyOption","buyOption");
+		response.shouldEndSession( false );	
+	   }
+		else{
+	    var pzValue = request.session("prize");
+		var quantityCount = request.session("buyCount");
+	    var cost = request.session("buyCount")* pzValue;	    
+		response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure, you want continue with this stock?");
+		response.shouldEndSession( false );	
+		}
   }
 );
+
+app.intent('yesBye',{
+    "utterances":[ 
+		"Yes",
+		"yes Please",
+		"Please buy",
+		"ok go ahead",]
+  }, function(request,response) {
+	    var pzValue = request.session("prize");
+		var quantityCount = request.session("buyCount");
+	    var cost = request.session("buyCount")* pzValue;	    
+		response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure, you want continue with this stock?");
+		response.shouldEndSession( false );		
+	});
 
 app.intent('buy', {
     "utterances":[ 
@@ -285,14 +505,35 @@ app.intent('buy', {
 		"Please buy",
 		"ok go ahead",]
   },function(request,response) {
-	response.say("Initiating transaction. Transaction successful. You just bought 10 shares of Microsoft");
+	  if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false')
+	   {
+	      response.say("you do not have authorized to buy.");
+	      response.shouldEndSession( false );	
+	   }
+	   else{
+	  var symbol = request.session("symbol");
+	  var quantity = request.session("buyCount");
+	  response.say("Initiating transaction...");
+	  response.session("portSym",symbol);
+      response.session("quantity",quantity)	  
+	  response.say("Transaction successful and Added in to PortFolio. ");
+	  response.shouldEndSession( false );	
+	   }
 });
 
 app.intent('sell', function(request,response) {
 	response.say("You sold your items!");
 });
 
-
+function sendOTP(OTP)
+		{
+				console.log(OTP);
+				OTP = Math.floor(Math.random() * 90000) + 10000;
+				console.log(OTP);
+				sendTextMessage(OTP);
+				return OTP;
+		}
+		
 function sendTextMessage(OTP){
 // Create a new REST API client to make authenticated requests against the
 // twilio back end
