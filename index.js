@@ -371,7 +371,7 @@ app.intent('GetCompanyDetails',{
 		}, function(request,response) {
 				var compName = request.slot('companyName');
 				console.log(compName);
-				var campanyName = '{"International Business Machines":"IBM","IBM":"IBM","Yahoo":"YHOO"}';
+				var campanyName = '{"International Business Machines":"IBM","ibm":"IBM","yahoo":"YHOO"}';
 				var compJson = JSON.parse(campanyName);
 				//console.log("Company"+compJson[compName]);
 				var symbol = compJson[compName];
