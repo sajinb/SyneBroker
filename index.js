@@ -71,7 +71,7 @@ var getMarketSummury = function(index, callback){
 			    }
 			if(parseFloat(ChnageInPrice) < 0)
 				{ 
-                      text += marketJson[CompName] + 'is down by' + opennumbertag + ChnageInPrice + closenumbertag
+                      text += marketJson[CompName] + ' is down by' + opennumbertag + ChnageInPrice + closenumbertag
                             + 'points,or'+ opennumbertag + PercentChnageInPrice + closenumbertag + 'percent, at' +Price+' dollars. ';
 			    }
             }        
@@ -106,12 +106,12 @@ var getJsonFromYahoo = function(stock, callback){
                 var quote = json.query.results.quote[i];
                 if ( quote.Name ) {
 				 stockCompmanyName.push({name:quote.Name,heldshare:holdingCount[i]});
-                    text +=  'you are holding ' +holdingCount[i]+' share of '+  quote.Name + ' who current prize is ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
-                            + ' dollars ';
+                    text +=  'you are holding ' +holdingCount[i]+' share of '+  quote.Name + '. Current prize is ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
+                            + ' dollars. ';
 					totalAsset+= parseFloat(quote.LastTradePriceOnly);
                 }
             }
-             text+=" your total asset is "+totalAsset;
+             text+=" Your total asset is "+totalAsset;
             callback(text);
 
         
@@ -382,8 +382,8 @@ app.intent('GetCompanyDetails',{
 				getCompanyName(symbol, function(data){
 				var speechText=data;
 				console.log(speechText);
-				response.say(speechText);
-				response.say("Do you want to buy?");
+				response.say(speechText+". Do you want to buy?");
+				//response.say("Do you want to buy?");
 				response.session("symbol",symbol);
 				response.clearSession(prize);
 				response.session("prize",prize);
@@ -534,6 +534,7 @@ app.intent('sell',
 		"sell {three|noofshares} shares",
 		"sell {four|noofshares} shares"]
   }, function(request,response) {
+	 console.log("Transaction successful. You sold<say-as interpret-as='cardinal'>"+ request.slot("noofshares") +"</say-as> shares of "+request.session("compnayToSell"));
 	 response.say("Transaction successful. You sold<say-as interpret-as='cardinal'>"+ request.slot("noofshares") +"</say-as> shares of "+request.session("compnayToSell"));
 });
 
@@ -548,6 +549,8 @@ app.intent('SelectionForSell',
   },
   function(request,response) {
     var selectedOption = request.slot("option");
+	console.log(selectedOption);
+	console.log(stockCompmanyName);
 	if(request.session("lastQuestion")=="portfolio")
 	{
 		if(isNaN(selectedOption)){
@@ -557,7 +560,7 @@ app.intent('SelectionForSell',
 				response.say("Selection out of range. Please select valid option");
 			}else{
 				response.session("compnayToSell",stockCompmanyName[parseInt(selectedOption)-1].name);
-				response.say("How many shares of "+ stockCompmanyName[parseInt(selectedOption)-1].name +" do you want to sell");
+				response.say("How many shares of "+ stockCompmanyName[parseInt(selectedOption)-1].name +" do you want to sell?");
 			}
 		}
 	}else{
