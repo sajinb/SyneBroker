@@ -411,6 +411,7 @@ app.intent('OTPIntent',
 		
 	}else{
 		response.say("Authentication Successful!");
+		response.session('authflag','true');
 		 if(request.session("lastQuestion")=="portfolio")
 		 {
 			  if(request.session("portSym")!= null && request.session("quantity")!= null)
@@ -434,7 +435,7 @@ app.intent('OTPIntent',
 				response.say("It will cost <say-as interpret-as='cardinal'>"+ cost +"</say-as> dollars for <say-as interpret-as='cardinal'>"+quantityCount +"</say-as>. Are you sure, you want continue with this stock?");
 				response.shouldEndSession( false );	
 		  }
-		response.session('authflag','true');
+		
 	}
 	response.shouldEndSession( false );
 		
