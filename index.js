@@ -411,7 +411,7 @@ app.intent('OTPIntent',
 		
 	}else{
 		response.session('authflag','true');
-		response.say("Authentication Successful!");
+		//response.say("Authentication Successful!");
 		 if(request.session("lastQuestion")=="portfolio")
 		 {
 			  if(request.session("portSym")!= null && request.session("quantity")!= null)
@@ -420,11 +420,11 @@ app.intent('OTPIntent',
 							holdingCount.push(request.session("quantity"));
 						}
 			 getJsonFromYahoo(stocks, function(data){
+						response.shouldEndSession( false );
 						var speechText=data;
 						console.log(speechText);
-						response.say(speechText);
+						response.say("Authentication Successful!"+speechText);
 						response.send();});
-						response.shouldEndSession( false );
 						return false;
 		   }
 		   if(request.session("buyOption")=="buyOption")
