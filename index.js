@@ -52,7 +52,7 @@ var getMarketSummury = function(index, callback){
 			"message" : json,
 			"channel" : "data_channel",
 			});
-			var text = ', ';
+			var text = '';
 			var opennumbertag="<say-as interpret-as='cardinal'>";
 			var closenumbertag="</say-as>";
             for ( var i=0; i < json.length; i++ ) {
@@ -430,7 +430,7 @@ app.intent('OTPIntent',
 		   {
 				var pzValue = request.session("prize");
 				var quantityCount = request.session("buyCount");
-				var cost = request.session("buyCount")* pzValue;	    
+				var cost = request.session("buyCount")* pzValue[0];	    
 				response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure, you want continue with this stock?");
 				response.shouldEndSession( false );	
 		  }
@@ -588,7 +588,7 @@ var client = new twilio.RestClient('AC262f2fba2b86a6845fd22bc763a60978', '8c6242
 
 client.sms.messages.create({
 
-    to:'+918380076641',
+    to:'+919096508160',
 
     from:'+12019497710',
 
