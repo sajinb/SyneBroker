@@ -371,7 +371,7 @@ app.intent('GetCompanyDetails',{
 		}, function(request,response) {
 				var compName = request.slot('companyName');
 				console.log(compName);
-				var campanyName = '{"International Business Machines":"IBM","IBM":"IBM","Apple Inc":"AAPL","Alphabet Inc": "GOOG","Amazon.com":"AMZN"}';
+				var campanyName = '{"International Business Machines":"IBM","IBM":"IBM","Yahoo":"YHOO"}';
 				var compJson = JSON.parse(campanyName);
 				//console.log("Company"+compJson[compName]);
 				var symbol = compJson[compName];
@@ -588,7 +588,7 @@ var client = new twilio.RestClient('AC262f2fba2b86a6845fd22bc763a60978', '8c6242
 
 client.sms.messages.create({
 
-    to:'+919096508160',
+    to:'+918380076641',
 
     from:'+12019497710',
 
