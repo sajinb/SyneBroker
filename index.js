@@ -406,7 +406,7 @@ app.intent('OTPIntent',
     //userid = request.slot('userid');
 	var spokenotp = request.slot('otpnum');
 	if(spokenotp != request.session("otp")){
-		response.say('Wrong security code.Please provide correct security code.' );
+		response.say('Wrong security code. Please provide correct security code.' );
 		response.session('authflag','false');
 		
 	}else{
@@ -430,8 +430,8 @@ app.intent('OTPIntent',
 		   {
 				var pzValue = request.session("prize");
 				var quantityCount = request.session("buyCount");
-				var cost = request.session("buyCount")* pzValue[0];	    
-				response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure, you want continue with this stock?");
+				var cost = request.session("buyCount")* pzValue;	    
+				response.say("It will cost <say-as interpret-as='cardinal'>"+ cost +"</say-as> dollars for <say-as interpret-as='cardinal'>"+quantityCount +"</say-as>. Are you sure, you want continue with this stock?");
 				response.shouldEndSession( false );	
 		  }
 		response.session('authflag','true');
@@ -482,12 +482,13 @@ app.intent('BuyOPtion',
 	    var pzValue = request.session("prize");
 		var quantityCount = request.session("buyCount");
 	    var cost = request.session("buyCount")* pzValue;	    
-		response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure, you want continue with this stock?");
+		response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure you want continue with this stock?");
 		response.shouldEndSession( false );	
 		}
   }
 );
 
+/*-
 app.intent('yesBye',{
     "utterances":[ 
 		"Yes",
@@ -500,7 +501,7 @@ app.intent('yesBye',{
 	    var cost = request.session("buyCount")* pzValue;	    
 		response.say("It will cost "+ cost +" dollars for "+quantityCount +". Are you sure, you want continue with this stock?");
 		response.shouldEndSession( false );		
-	});
+	});*/
 
 app.intent('buy', {
     "utterances":[ 
@@ -511,16 +512,15 @@ app.intent('buy', {
   },function(request,response) {
 	  if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false')
 	   {
-	      response.say("you do not have authorized to buy.");
+	      response.say("you are not have authorized to buy.");
 	      response.shouldEndSession( false );	
 	   }
 	   else{
-	  var symbol = request.session("symbol");
+	  var portSym = request.session("symbol");
 	  var quantity = request.session("buyCount");
-	  response.say("Initiating transaction...");
-	  response.session("portSym",symbol);
+	  response.session("portSym",portSym);
       response.session("quantity",quantity)	  
-	  response.say("Transaction successful and Added in to PortFolio. ");
+	  response.say("Initiating transaction. Transaction successful added to PortFolio. ");
 	  response.shouldEndSession( false );	
 	   }
 });
