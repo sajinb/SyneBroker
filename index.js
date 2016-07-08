@@ -181,15 +181,15 @@ var getCompanyName= function(stock, callback){
 			if(parseFloat(quote.Change) > 0)
 				{ 
                        text += quote.Name + ' Up by '+ opennumbertag + quote.Change + closenumbertag +
-					                     'points,or'+ opennumbertag + quote.PercentChange + closenumbertag + 
-										 'per cent, at'+ opennumbertag + quote.LastTradePriceOnly + closenumbertag +
+					                     'points or'+ opennumbertag + quote.PercentChange + closenumbertag + 
+										 'percent at'+ opennumbertag + quote.LastTradePriceOnly + closenumbertag +
                                          ' dollars. ';
                 }
 				if(parseFloat(quote.Change) < 0)
 				{ 
                         text += quote.Name + ' Down by '+ opennumbertag + quote.Change + closenumbertag +
-					                     'points,or'+ opennumbertag + quote.PercentChange + closenumbertag + 
-										 'per cent, at'+ opennumbertag + quote.LastTradePriceOnly + closenumbertag +
+					                     'points or'+ opennumbertag + quote.PercentChange + closenumbertag + 
+										 'percent at'+ opennumbertag + quote.LastTradePriceOnly + closenumbertag +
                                          ' dollars. ';
                 }
           
@@ -436,7 +436,7 @@ app.intent('OTPIntent',
 		  }
 		response.session('authflag','true');
 	}
-	response.shouldEndSession( false )
+	response.shouldEndSession( false );
 		
   }
 );
@@ -512,7 +512,7 @@ app.intent('buy', {
   },function(request,response) {
 	  if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false')
 	   {
-	      response.say("you are not have authorized to buy.");
+	      response.say("you are not authorized to buy.");
 	      response.shouldEndSession( false );	
 	   }
 	   else{
