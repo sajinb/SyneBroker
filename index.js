@@ -410,8 +410,8 @@ app.intent('OTPIntent',
 		response.session('authflag','false');
 		
 	}else{
-		response.say("Authentication Successful!");
 		response.session('authflag','true');
+		response.say("Authentication Successful!");
 		 if(request.session("lastQuestion")=="portfolio")
 		 {
 			  if(request.session("portSym")!= null && request.session("quantity")!= null)
