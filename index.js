@@ -21,6 +21,8 @@ var stocks = [ 'AAPL', 'GOOG', 'AMZN' ];
 var stocksTopThree = [ 'MSFT', 'INTC', 'YHOO' ]; 
 var holdingCount = [100,200,65];
 var prize = [];
+var stockCompmanyName = [];
+  
 
 var url = function(stockIds){
   var yahoourl = 'https://query.yahooapis.com/v1/public/yql';
@@ -64,13 +66,13 @@ var getMarketSummury = function(index, callback){
 			   var marketJson = JSON.parse(GoogleIndex);
 			 if(parseFloat(ChnageInPrice) > 0)
 				{ 
-                      text += marketJson[CompName] + ' is increse by' + opennumbertag + ChnageInPrice + closenumbertag
-                            + 'points,or'+ opennumbertag + PercentChnageInPrice + closenumbertag + 'per cent, at' +Price +' dollars. ';
+                      text += marketJson[CompName] + ' is up by' + opennumbertag + ChnageInPrice + closenumbertag
+                            + 'points,or'+ opennumbertag + PercentChnageInPrice + closenumbertag + 'percent, at' +Price +' dollars. ';
 			    }
 			if(parseFloat(ChnageInPrice) < 0)
 				{ 
-                      text += marketJson[CompName] + 'is lower by' + opennumbertag + ChnageInPrice + closenumbertag
-                            + 'points,or'+ opennumbertag + PercentChnageInPrice + closenumbertag + 'per cent, at' +Price+' dollars. ';
+                      text += marketJson[CompName] + 'is down by' + opennumbertag + ChnageInPrice + closenumbertag
+                            + 'points,or'+ opennumbertag + PercentChnageInPrice + closenumbertag + 'percent, at' +Price+' dollars. ';
 			    }
             }        
             callback(text);        
@@ -103,6 +105,7 @@ var getJsonFromYahoo = function(stock, callback){
             for ( var i=0 ; i < stocks.length ; i++ ) {
                 var quote = json.query.results.quote[i];
                 if ( quote.Name ) {
+				 stockCompmanyName.push({name:quote.Name,heldshare:holdingCount[i]});
                     text +=  'you are holding ' +holdingCount[i]+' share of '+  quote.Name + ' who current prize is ' + opennumbertag + quote.LastTradePriceOnly + closenumbertag
                             + ' dollars ';
 					totalAsset+= parseFloat(quote.LastTradePriceOnly);
@@ -206,7 +209,8 @@ app.launch( function( request, response ) {
     "message" : "Welcome",
     "channel" : "welcome_channel",
 	});
-	response.say( "Welcome to SiniBroker. May I know, What would you like? Quote My Portfolio,Market Summary,Top Most Trader" ).reprompt("I did not understand what you want to know.").shouldEndSession(false);
+	response.say( "Welcome to SiniBroker. May I know, What would you like? Quote My Portfolio, Market Summary, Stocks of the week" ).reprompt("I did not understand what you want to know.").shouldEndSession(false);
+	stockCompmanyName = [];
 	response.clearSession();
 });
 
@@ -221,7 +225,7 @@ app.intent('GetMarketSummery',
   {
     //"slots":{"userid":"LITERAL"},
 	"utterances":[ 
-		"Show market Summuery for today",
+		"Show market Summary for today",
 		"Current market update",
 		"Show market index for today"]
   },
@@ -239,7 +243,7 @@ app.intent('GetMarketSummery',
 
 
 var OTP=99999;
-var securityMsg = "A security code has been sent to your registered mobile number for final verification.";
+var securityMsg = "A security code has been sent to your registered mobile number for verification.";
 
 /*
 app.intent('GetUserId',
@@ -362,7 +366,7 @@ app.intent('GetCompanyDetails',{
 	   ,"utterances":[ 
 		"Company Detail{Apple Inc|companyName}",
 		"Show Company Detail{Apple Inc|companyName}",
-		" Get Company Detail for {Apple Inc|companyName}",
+		"Get Company Detail for {Apple Inc|companyName}",
 		"Company Name is{Apple Inc|companyName}"]
 		}, function(request,response) {
 				var compName = request.slot('companyName');
@@ -521,9 +525,48 @@ app.intent('buy', {
 	   }
 });
 
-app.intent('sell', function(request,response) {
-	response.say("You sold your items!");
+app.intent('sell',
+  {
+    "slots":{"noofshares":"NUMBER"}
+	,"utterances":[ 
+		"sell {one|noofshares} shares",
+		"sell {two|noofshares} shares",
+		"sell {three|noofshares} shares",
+		"sell {four|noofshares} shares"]
+  }, function(request,response) {
+	 response.say("Transaction successful. You sold<say-as interpret-as='cardinal'>"+ request.slot("noofshares") +"</say-as> shares of "+request.session("compnayToSell"));
 });
+
+app.intent('SelectionForSell',
+  {
+    "slots":{"option":"NUMBER"}
+	,"utterances":[ 
+		"select option {one|option}",
+		"select option {two|option}",
+		"select option {three|option}",
+		"select option {four|option}"]
+  },
+  function(request,response) {
+    var selectedOption = request.slot("option");
+	if(request.session("lastQuestion")=="portfolio")
+	{
+		if(isNaN(selectedOption)){
+			response.say("Input not valid");
+		}else{
+			if(parseInt(selectedOption)>stocks.length){
+				response.say("Selection out of range. Please select valid option");
+			}else{
+				response.session("compnayToSell",stockCompmanyName[parseInt(selectedOption)-1].name);
+				response.say("How many shares of "+ stockCompmanyName[parseInt(selectedOption)-1].name +" do you want to sell");
+			}
+		}
+	}else{
+		response.say("I did not get your question could you please repeat the question?");
+	}
+	response.shouldEndSession( false )
+		
+  }
+);
 
 function sendOTP(OTP)
 		{
