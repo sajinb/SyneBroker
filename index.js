@@ -470,6 +470,7 @@ app.intent('BuyOPtion',
 		"buy shares"]
   },
   function(request,response) {
+	 console.log(request.session('authflag'));
 	 if(_.isEmpty(request.session('authflag')) || request.session('authflag')=='false')
 	   {
 	    var otpValue = sendOTP(OTP);
